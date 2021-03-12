@@ -1,16 +1,21 @@
 mod types;
 mod server;
+mod client;
 
 use message_io::network::Transport;
 use std::net::{SocketAddr, SocketAddrV4, Ipv4Addr};
+use message_io::network::{RemoteAddr};
+use std::env;
 
 fn main() {
-    // let mes = Message::new("jacob", "bob", "hello world");
-    // println!("{:?}", mes);
-    // let msg_str = bincode::serialize(&mes).unwrap();
-    // println!("{:?}", msg_str);
+    let args: Vec<String> = env::args().collect();
+
     let tp = Transport::Tcp;
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 3044);
-
-    server::run(tp, SocketAddr::V4(addr));
+    
+    if (args[1] == "server") {
+        server::run(tp, SocketAddr::V4(addr));
+    } else {
+        client::run(tp, RemoteAddr::SocketAddr(SocketAddr::V4(addr)));
+    }
 }

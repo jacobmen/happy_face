@@ -26,7 +26,7 @@ pub fn run(transport: Transport, addr: SocketAddr) {
                         println!("{}", err);
                         Message::new("", "", "")
                     });
-                // println!("{}", message.sender);
+                println!("{:?}", message);
             },
             NetEvent::Connected(endpoint) => {
                 // TODO: Add client to map

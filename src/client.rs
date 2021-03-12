@@ -11,7 +11,7 @@ enum Event {
 
 // remote address: from ec2 instance
 pub fn run(transport: Transport, remote_addr: RemoteAddr) {
-  let (mut events, mut network) = Network::split_and_map(|net_event| Event::Network(net_event));
+  let (mut network, mut events) = Network::split_and_map(|net_event| Event::Network(net_event));
   
   // connect to server
   let (server_id, local_addr) = match network.connect(transport, remote_addr.clone()) {
@@ -23,7 +23,7 @@ pub fn run(transport: Transport, remote_addr: RemoteAddr) {
 
   println!("Connected to server by {} at {}", transport, server_id.addr());
   println!("Client identified by local port: {}", local_addr.port());
-
+  
   loop {
     match events.receive() {
         // send ping to server
@@ -36,8 +36,12 @@ pub fn run(transport: Transport, remote_addr: RemoteAddr) {
         // receive response from server
         Event::Network(net_event) => match net_event {
             NetEvent::Message(_, mes) => {
-              let msg_str = serde_json::to_string(&mes).unwrap();
-              println!("{}", msg_str);
+              let message: Message = bincode::deserialize(&mes)
+                .unwrap_or_else(|err| {
+                    println!("{}", err);
+                    Message::new("", "", "")
+                });
+              println!("{:?}", message);
             }
             NetEvent::Connected(_) => unreachable!(), // Only generated when listen
             NetEvent::Disconnected(_) => return println!("Server is disconnected"),
