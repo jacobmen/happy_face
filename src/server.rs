@@ -21,7 +21,11 @@ pub fn run(transport: Transport, addr: SocketAddr) {
     loop {
         match event_queue.receive() {
             NetEvent::Message(endpoint, input_data) => {
-                let message: Message = bincode::deserialize(&input_data).unwrap();
+                let message: Message = bincode::deserialize(&input_data)
+                    .unwrap_or_else(|err| {
+                        println!("{}", err);
+                        Message::new("", "", "")
+                    });
                 // println!("{}", message.sender);
             },
             NetEvent::Connected(endpoint) => {
