@@ -2,6 +2,9 @@ mod client;
 mod input;
 mod server;
 mod types;
+mod history;
+
+use types::Message;
 
 use message_io::network::RemoteAddr;
 use message_io::network::Transport;
@@ -12,6 +15,14 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     let tp = Transport::Tcp;
+
+    let message = Message::new("jacob", "bob", "hello world");
+    let message2 = Message::new("jacob", "bob", "hello again");
+    let key = "bobjacob";
+
+    let result = history::insert_message(&key, message);
+    let result2 = history::insert_message(&key, message2);
+    let result3 = history::print_history(&key);
 
     if args[1] == "server" {
         let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 3044);

@@ -4,25 +4,43 @@ use sled::{Result, IVec};
 
 use super::types::Message;
 
-pub fn create_history() -> Result<()> {
+// history_db file will have vectors that each represent a conversation (list of messages) 
+// with keys representing the unique chat groups/paiers
+pub fn insert_message(key: &str, msg: Message) -> Result<()> {
   let db = sled::open("history_db")?;
-  let key = "JaneJohn";
-  let mut vec = Vec::new();
 
-  let message = Message::new("jacob", "bob", "hello world");
-  vec.push(message);
+  if !db.contains_key(key).unwrap() {
+    let mut vec: Vec<Message> = Vec::new();
+    vec.push(msg);
+    let vec_ser = bincode::serialize(&vec).unwrap();
+    db.insert(key, vec_ser)?;
+  } else {
+    let value = db.get(key).unwrap().unwrap();
+    let mut history_vector: Vec<Message> = bincode::deserialize(&value).unwrap();
+    history_vector.push(msg);
+    let vec_ser = bincode::serialize(&history_vector).unwrap();
+    db.insert(key, vec_ser)?;
+  }
 
-  let message_data = bincode::serialize(&vec).unwrap();
-  dbg!(db.insert(key, message_data)?);
-  let value = db.get(key).unwrap().unwrap();
-  let output: Vec<Message> = bincode::deserialize(&value).unwrap();
-  println!("{:?}", output[0]);
   Ok(())
 }
 
-// history_db file will have vectors that each represent a conversation (list of messages) with keys representing the unique
-pub fn insert_message(key: &str, msg: Message) {
-  let db = sled::open("history_db");
-  let msg_data = bincode::serialize(&msg).unwrap();
+pub fn print_history(key: &str) -> Result<()> {
+  let db = sled::open("history_db")?;
   
+  let value = db.get(key).unwrap().unwrap();
+  let history_vector: Vec<Message> = bincode::deserialize(&value).unwrap();
+
+  for x in 0..history_vector.len() {
+    println!("{:?}", history_vector[x]);
+  }
+  
+  Ok(())
+}
+
+pub fn clear_history() -> Result<()> {
+  let db = sled::open("history_db")?;
+  let result = db.clear();
+
+  Ok(())
 }
