@@ -16,3 +16,8 @@ impl<'a> Message<'a> {
         }
     }
 }
+
+enum Event<I> {
+    Input(I),
+    Tick,
+}

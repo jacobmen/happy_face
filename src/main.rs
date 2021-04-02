@@ -3,6 +3,8 @@ mod input;
 mod server;
 mod types;
 mod history;
+mod ui;
+mod renderer;
 
 use types::Message;
 
