@@ -1,5 +1,5 @@
 use super::input::InputCollector;
-use super::types::Message;
+use super::types::{Message, MessageType, get_message_type};
 
 use message_io::events::EventQueue;
 use message_io::network::{AdapterEvent, NetEvent, Network, RemoteAddr, Transport};
@@ -7,11 +7,10 @@ use message_io::network::{AdapterEvent, NetEvent, Network, RemoteAddr, Transport
 enum Event {
     Network(NetEvent),
     Input(String),
-    Message,
 }
 
 // remote address: from ec2 instance
-pub fn run(transport: Transport, remote_addr: RemoteAddr) {
+pub fn run(transport: Transport, remote_addr: RemoteAddr, sender: &str) {
     let mut event_queue = EventQueue::new();
 
     let network_queue = event_queue.sender().clone();
@@ -45,15 +44,14 @@ pub fn run(transport: Transport, remote_addr: RemoteAddr) {
     );
     println!("Client identified by local port: {}", local_addr.port());
 
+    let mut receiver = "Receiver".to_string();
+
+    // Send garbage initial value so client is recognized later
+    let initial_message = Message::new(sender, "", "");
+    network.send(server_id, &bincode::serialize(&initial_message).unwrap());
+
     loop {
         match event_queue.receive() {
-            // send ping to server
-            Event::Message => {
-                let message = Message::new("jacob", "bob", "hello world");
-                let output_data = bincode::serialize(&message).unwrap();
-                network.send(server_id, &output_data);
-                event_queue.sender().send(Event::Message);
-            }
             // receive response from server
             Event::Network(net_event) => match net_event {
                 NetEvent::Message(_, mes) => {
@@ -70,15 +68,23 @@ pub fn run(transport: Transport, remote_addr: RemoteAddr) {
             Event::Input(user_input) => {
                 let cleaned_str = user_input.trim();
 
-                if cleaned_str.len() >= 400 {
-                    println!("Bad input: Input too long");
+                if cleaned_str.len() >= 400 || cleaned_str.is_empty() {
+                    println!("Bad input: Input too long / Empty");
                     continue;
                 }
 
-                let message = Message::new("Sender", "Reciever", cleaned_str);
-                let output_data = bincode::serialize(&message).unwrap();
-                network.send(server_id, &output_data);
-                // event_queue.sender().send(Event::Message);
+                match get_message_type(&cleaned_str) {
+                    MessageType::ChangeReceiver => {
+                        receiver = cleaned_str[1..].to_string();
+                        println!("Changed receiver to: {}", receiver);
+                        continue;
+                    },
+                    _ => (),
+                }
+
+                let message = Message::new(sender, &receiver, cleaned_str);
+                let serialized_data = bincode::serialize(&message).unwrap();
+                network.send(server_id, &serialized_data);
             }
         }
     }
