@@ -77,7 +77,7 @@ impl Client {
                         });
                         let split = message.content.split("\n");
                         for s in split {
-                          println!("{}: {}", message.sender, s);
+                          println!("{}", s);
                         }
                     }
                     NetEvent::Connected(_) => unreachable!(), // Only generated when listen

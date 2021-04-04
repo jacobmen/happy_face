@@ -135,6 +135,8 @@ impl Server {
 
         let mut history_string = "".to_string();
         for x in start_index..history_vector.len() {
+          history_string.push_str(history_vector[x].sender);
+          history_string.push_str(": ");
           history_string.push_str(history_vector[x].content);
           history_string.push_str("\n");
         }
