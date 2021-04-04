@@ -15,6 +15,7 @@ pub struct Client {
 }
 
 impl Client {
+    /// Creates new client with network and general event queue.
     pub fn new() -> Client {
         let mut event_queue = EventQueue::new();
 
@@ -32,6 +33,8 @@ impl Client {
         }
     }
 
+    /// Starts the client, connecting it to the address associated with remote_addr.
+    /// Additionally, starts new thread to read input from stdin to use as message content.
     pub fn run(&mut self, transport: Transport, remote_addr: RemoteAddr, sender: &str) {
         let input_queue = self.event_queue.sender().clone();
         let input = InputCollector::new(move |input_event| match input_event {
