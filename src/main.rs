@@ -4,12 +4,13 @@ mod input;
 mod server;
 mod types;
 
-use types::Message;
-
 use message_io::network::RemoteAddr;
 use message_io::network::Transport;
 use std::env;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+
+use client::Client;
+use server::Server;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -26,10 +27,12 @@ fn main() {
 
     if args[1] == "server" {
         let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 3044);
-        server::run(tp, SocketAddr::V4(addr));
+        let mut server = Server::new();
+        server.run(tp, SocketAddr::V4(addr));
     } else {
         let client_addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 3044);
-        client::run(
+        let mut client = Client::new();
+        client.run(
             tp,
             RemoteAddr::SocketAddr(SocketAddr::V4(client_addr)),
             &args[2],
