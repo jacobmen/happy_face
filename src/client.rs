@@ -75,7 +75,10 @@ impl Client {
                             println!("{}", err);
                             Message::new("", "", "")
                         });
-                        println!("{:?}", message);
+                        let split = message.content.split("\n");
+                        for s in split {
+                          println!("{}: {}", message.sender, s);
+                        }
                     }
                     NetEvent::Connected(_) => unreachable!(), // Only generated when listen
                     NetEvent::Disconnected(_) => return println!("Server is disconnected"),

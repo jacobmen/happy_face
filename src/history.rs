@@ -25,12 +25,11 @@ pub fn insert_message(key: &str, msg: Message) -> Result<()> {
     Ok(())
 }
 
-pub fn print_history(key: &str) -> Result<()> {
-    let db = sled::open("history_db")?;
+pub fn get_history(key: &str) -> Result<()> {
+    let db = sled::open("history_db");
 
-    let value = db.get(key).unwrap().unwrap();
+    let value = db.unwrap().get(key).unwrap().unwrap();
     let history_vector: Vec<Message> = bincode::deserialize(&value).unwrap();
-
     for x in 0..history_vector.len() {
         println!("{:?}", history_vector[x]);
     }
