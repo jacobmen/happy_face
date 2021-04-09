@@ -1,11 +1,11 @@
 use message_io::events::EventQueue;
 use message_io::network::{Endpoint, NetEvent, Network, Transport};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::cmp::Ordering;
 
+use super::history::{get_history, insert_message};
 use super::types::{get_message_type, Message, MessageType};
-use super::history::{insert_message, get_history};
 
 pub struct Server {
     network: Network,
@@ -80,13 +80,13 @@ impl Server {
         if message.receiver.is_empty() {
             return;
         }
-        
+
         let key: String;
         // key is created by appending string of greater value to the lesser valued one
         if message.sender.cmp(message.receiver) == Ordering::Less {
-          key = format!("{}{}", message.sender, message.receiver);
+            key = format!("{}{}", message.sender, message.receiver);
         } else {
-          key = format!("{}{}", message.receiver, message.sender);
+            key = format!("{}{}", message.receiver, message.sender);
         }
 
         match get_message_type(&message.content) {
@@ -119,30 +119,24 @@ impl Server {
     }
 
     fn send_history_info(&mut self, message: &Message, key: String) {
-      // sending history to user who originally sent !history
-      if let Some(receiver_endpt) = self.clients.get(message.sender) {
-        let history_string: String = get_history(&key);
-        let history_msg = Message::new(
-            "Server",
-            message.sender,
-            &history_string
-        );
+        // sending history to user who originally sent !history
+        if let Some(receiver_endpt) = self.clients.get(message.sender) {
+            let history_string: String = get_history(&key);
+            let history_msg = Message::new("Server", message.sender, &history_string);
 
-        self.network.send(
-            *receiver_endpt,
-            &bincode::serialize(&history_msg).unwrap(),
-        );
-      } else {
-          let err_msg = Message::new(
-              "Server",
-              message.sender,
-              "No reciever with that name connected",
-          );
+            self.network
+                .send(*receiver_endpt, &bincode::serialize(&history_msg).unwrap());
+        } else {
+            let err_msg = Message::new(
+                "Server",
+                message.sender,
+                "No reciever with that name connected",
+            );
 
-          self.network.send(
-              self.clients[message.sender],
-              &bincode::serialize(&err_msg).unwrap(),
-          );
-      }
+            self.network.send(
+                self.clients[message.sender],
+                &bincode::serialize(&err_msg).unwrap(),
+            );
+        }
     }
 }

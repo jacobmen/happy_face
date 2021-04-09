@@ -4,6 +4,8 @@ use super::types::{get_message_type, Message, MessageType};
 use message_io::events::EventQueue;
 use message_io::network::{AdapterEvent, NetEvent, Network, RemoteAddr, Transport};
 
+use std::io::{self, Write};
+
 enum Event {
     Network(NetEvent),
     Input(String),
@@ -66,6 +68,9 @@ impl Client {
         self.network
             .send(server_id, &bincode::serialize(&initial_message).unwrap());
 
+        print!("> ");
+        io::stdout().flush().expect("Failed to flush stdout");
+
         loop {
             match self.event_queue.receive() {
                 // receive response from server
@@ -75,9 +80,14 @@ impl Client {
                             println!("{}", err);
                             Message::new("", "", "")
                         });
-                        let split = message.content.split("\n");
-                        for s in split {
-                          println!("{}", s);
+
+                        if message.sender == "Server" {
+                            let split = message.content.split("\n");
+                            for s in split {
+                                println!("{}", s);
+                            }
+                        } else {
+                            println!("{}: {}", message.sender, message.content);
                         }
                     }
                     NetEvent::Connected(_) => unreachable!(), // Only generated when listen
@@ -96,16 +106,17 @@ impl Client {
                         MessageType::ChangeReceiver => {
                             receiver = cleaned_str[1..].to_string();
                             println!("Changed receiver to: {}", receiver);
-                            continue;
                         }
-                        _ => (),
+                        _ => {
+                            let message = Message::new(sender, &receiver, cleaned_str);
+                            let serialized_data = bincode::serialize(&message).unwrap();
+                            self.network.send(server_id, &serialized_data);
+                        }
                     }
-
-                    let message = Message::new(sender, &receiver, cleaned_str);
-                    let serialized_data = bincode::serialize(&message).unwrap();
-                    self.network.send(server_id, &serialized_data);
                 }
             }
+            print!("> ");
+            io::stdout().flush().expect("Failed to flush stdout");
         }
     }
 }
