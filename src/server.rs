@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use std::cmp::Ordering;
 
 use super::types::{get_message_type, Message, MessageType};
-use super::history::{insert_message};
+use super::history::{insert_message, get_history};
 
 pub struct Server {
     network: Network,
@@ -121,26 +121,7 @@ impl Server {
     fn send_history_info(&mut self, message: &Message, key: String) {
       // sending history to user who originally sent !history
       if let Some(receiver_endpt) = self.clients.get(message.sender) {
-        // todo: put in history.rs function
-        let db = sled::open("history_db");
-
-        let value = db.unwrap().get(key).unwrap().unwrap();
-        let history_vector: Vec<Message> = bincode::deserialize(&value).unwrap();
-        
-        // only send 10 most recent Messages
-        let mut start_index = 0;
-        if history_vector.len() > 10{
-          start_index = history_vector.len() - 10;
-        }
-
-        let mut history_string = "".to_string();
-        for x in start_index..history_vector.len() {
-          history_string.push_str(history_vector[x].sender);
-          history_string.push_str(": ");
-          history_string.push_str(history_vector[x].content);
-          history_string.push_str("\n");
-        }
-
+        let history_string: String = get_history(&key);
         let history_msg = Message::new(
             "Server",
             message.sender,
