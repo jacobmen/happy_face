@@ -13,11 +13,14 @@ use message_io::network::Transport;
 use std::env;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener};
 
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     let tp = Transport::Tcp;
-
+    let stdout = io::stdout();
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend); 
     // let message = Message::new("jacob", "bob", "hello world");
     // let message2 = Message::new("jacob", "bob", "hello again");
     // let key = "bobjacob";
