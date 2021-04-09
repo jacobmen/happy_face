@@ -15,3 +15,4 @@ sled = "0.34"
 crossterm = { version = "0.19", features = [ "serde" ] }
 tui = { version = "0.14", default-features = false, features = ['crossterm', 'serde'] }
 state = { version = "0.4", features = ["tls"] }
+clap = "2.33.3"

@@ -30,15 +30,9 @@ pub enum MessageType {
 pub fn get_message_type(message: &str) -> MessageType {
     if message == "!history" {
         MessageType::History
-    } else if message
-        .chars()
-        .nth(0)
-        .expect("Message content empty")
-        == '!'
-    {
+    } else if message.chars().nth(0).expect("Message content empty") == '!' {
         MessageType::ChangeReceiver
     } else {
         MessageType::SendMessage
     }
 }
-
