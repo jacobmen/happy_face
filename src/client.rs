@@ -1,10 +1,11 @@
 use super::input::InputCollector;
 use super::types::{get_message_type, Message, MessageType};
+use super::renderer::{render};
 
 use message_io::events::EventQueue;
 use message_io::network::{AdapterEvent, NetEvent, Network, RemoteAddr, Transport};
 
-enum Event {
+pub enum Event {
     Network(NetEvent),
     Input(String),
 }
@@ -58,7 +59,7 @@ impl Client {
             server_id.addr()
         );
         println!("Client identified by local port: {}", local_addr.port());
-
+        let res = render();
         let mut receiver = "Receiver".to_string();
 
         // Send garbage initial value so client is recognized later
