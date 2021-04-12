@@ -21,18 +21,16 @@ fn main() {
         .version(crate_version!())
         .about("Terminal based chat app")
         .author(crate_authors!())
+        .subcommand(App::new("server"))
         .subcommand(
-            App::new("server")
+            App::new("client").arg(
+                Arg::with_name("client_name")
+                    .help("Name of client")
+                    .index(1)
+                    .required(true),
+            ),
         )
-        .subcommand(
-            App::new("client")
-                .arg(
-                    Arg::with_name("client_name")
-                        .help("Name of client")
-                        .index(1)
-                        .required(true),
-                )
-        ).get_matches();
+        .get_matches();
 
     
     if let Some(_) = matches.subcommand_matches("server") {
@@ -45,7 +43,9 @@ fn main() {
         client.run(
             Transport::Tcp,
             RemoteAddr::SocketAddr(SocketAddr::V4(client_addr)),
-            matches.value_of("client_name").expect("Couldn't decode client name"),
+            matches
+                .value_of("client_name")
+                .expect("Couldn't decode client name"),
         );
     } else {
         eprintln!("No legal subcommand found. Run with --help for options");
