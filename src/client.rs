@@ -7,6 +7,21 @@ use message_io::network::{AdapterEvent, NetEvent, Network, RemoteAddr, Transport
 
 use std::io::{self, Write};
 
+use crossterm::{
+    event::{self, Event as CEvent, KeyCode},
+    terminal::{disable_raw_mode, enable_raw_mode},
+};
+use tui::{
+    backend::CrosstermBackend,
+    layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    text::{Span, Spans},
+    widgets::{
+        Block, BorderType, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Table, Tabs,
+    },
+    Terminal,
+};
+
 enum Event {
     Network(NetEvent),
     Input(String),
@@ -39,6 +54,13 @@ impl Client {
     /// Starts the client, connecting it to the address associated with remote_addr.
     /// Additionally, starts new thread to read input from stdin to use as message content.
     pub fn run(&mut self, transport: Transport, remote_addr: RemoteAddr, sender: &str) {
+        // enable_raw_mode().expect("can run in raw mode");
+        // TODO: 
+        // Have an event for character inputs and whenever character is inputted, handle
+            // every character to be printed out in the box using TUI and '\n' will be handled automatically 
+            // by inputcollector???
+            // handle ^C to be disabling raw mode and then quit out of the current running process
+
         let input_queue = self.event_queue.sender().clone();
         let input = InputCollector::new(move |input_event| match input_event {
             Ok(event) => input_queue.send(Event::Input(event)),
@@ -61,7 +83,7 @@ impl Client {
             server_id.addr()
         );
         println!("Client identified by local port: {}", local_addr.port());
-        let res = render();
+        // let res = render();
         let mut receiver = "Receiver".to_string();
 
         // Send garbage initial value so client is recognized later
@@ -72,6 +94,10 @@ impl Client {
         print!("> ");
         io::stdout().flush().expect("Failed to flush stdout");
 
+        let backend = CrosstermBackend::new(io::stdout());
+        let mut terminal = Terminal::new(backend).expect("Couldn't make terminal");
+        // let mut text = "hello";
+        let mut vec: Vec<String> = Vec::new();
         loop {
             match self.event_queue.receive() {
                 // receive response from server
@@ -81,15 +107,18 @@ impl Client {
                             println!("{}", err);
                             Message::new("", "", "")
                         });
-
-                        if message.sender == "Server" {
-                            let split = message.content.split("\n");
-                            for s in split {
-                                println!("{}", s);
-                            }
-                        } else {
-                            println!("{}: {}", message.sender, message.content);
-                        }
+                        vec.push(message.content.to_string());
+                        println!("");  
+                        // history
+                        // if message.sender == "Server" {
+                        //     let split = message.content.split("\n");
+                        //     for s in split {
+                        //         println!("{}", s);
+                        //     }
+                        // } else {
+                        //     // test_text = message.content;
+                        //     println!("{}: {}", message.sender, message.content);
+                        // }
                     }
                     NetEvent::Connected(_) => unreachable!(), // Only generated when listen
                     NetEvent::Disconnected(_) => return println!("Server is disconnected"),
@@ -110,14 +139,43 @@ impl Client {
                         }
                         _ => {
                             let message = Message::new(sender, &receiver, cleaned_str);
+                            // vec.push(message.content.to_string());
                             let serialized_data = bincode::serialize(&message).unwrap();
                             self.network.send(server_id, &serialized_data);
                         }
                     }
                 }
             }
-            print!("> ");
-            io::stdout().flush().expect("Failed to flush stdout");
+            terminal.draw(|f| {
+                let size = f.size();
+                if vec.len() > 0 {
+                    let mut messages = "".to_string();
+                    for x in 0..vec.len() {
+                        messages.push_str(&vec[x]);
+                        messages.push_str("\n");
+                    }
+                    let copyright = Paragraph::new(messages)
+                    .style(Style::default().fg(Color::LightCyan))
+                    .alignment(Alignment::Left)
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .style(Style::default().fg(Color::White))
+                            .border_type(BorderType::Plain),
+                    );
+                    
+                    f.render_widget(copyright, size);
+                } else {
+                    let b_box = Block::default()
+                        .borders(Borders::ALL)
+                        .style(Style::default().fg(Color::White))
+                        .border_type(BorderType::Plain);
+                
+                    f.render_widget(b_box, size);
+                }
+            }).expect("Failed to draw");
+            // print!("> ");
+            // io::stdout().flush().expect("Failed to flush stdout");
         }
     }
 }
